@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>To Do List</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Space+Grotesk:wght@300..700&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" integrity="sha512-NhSC1YmyruXifcj/KFRWoC561YpHpc5Jtzgvbuzx5VozKpWvQ+4nXhPdFgmx8xqexRcpAglTj9sIBWINXa8x5w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        * {
+            font-family: "Josefin Sans", sans-serif;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        ::-webkit-scrollbar {
+            visibility: hidden;
+            opacity: 0;
+            width: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="h-full" id="app">
+        <div class="grid place-items-center h-full" :class="darkTheme ? 'bg-[#181824]' : 'bg-slate-100' ">
+            <img class="absolute top-0 left-0 w-full" :src="darkTheme ? 'bg-desktop-dark.jpg' : 'bg-desktop-light.jpg' " alt="" />
+            <div class="z-10 w-1/3">
+                <div class="flex flex-col gap-10 absolute top-24 w-[inherit]">
+                    <div class="flex flex-row justify-between items-center">
+                        <p class="font-bold text-white text-4xl">T O D O</p>
+                        <button @click="changeTheme()">
+                            <img :src="darkTheme ? 'icon-sun.svg' : 'icon-moon.svg' " alt="" />
+                        </button>
+                    </div>
+                    <div class="flex flex-col gap-7">
+                        <div class="rounded-md w-full flex flex-row gap-5 p-4" :class="darkTheme ? 'bg-[#25273C]' : 'bg-white' ">
+                            <div class="border rounded-full w-6 h-6" :class="darkTheme ? 'border-slate-600' : 'border-slate-300' "></div>
+                            <input class="grow bg-transparent font-light text-lg focus:outline-none" placeholder="Create a new todo..." :class="darkTheme ? 'text-slate-100' : 'text-slate-800' " v-model="newList" @keypress.enter="submitList">
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="bg-[#25273C] rounded-md w-full flex flex-col shadow-md" v-if="filterLists.length > 0" :class="darkTheme ? 'bg-[#25273C]' : 'bg-white' ">
+                            <div class="flex flex-col">
+                                <div class="max-h-[50vh] overflow-y-scroll">
+                                    <div v-for="(list, index) in filterLists" :key="index">
+                                        <div class="group flex flex-row gap-5 p-[18px] items-center">
+                                            <div class="flex items-center justify-center rounded-full w-[24px] h-[24px] " :class="[darkTheme ? 'bg-slate-600' : 'bg-slate-300', list.isActive ? 'bg-gradient-to-r from-[#6590E1] to-[#B966C1]' : 'hover:bg-gradient-to-r from-[#6590E1] to-[#B966C1]']" @click="activeStatus(index)">
+                                                <img src="icon-check.svg" alt="" v-if="list.isActive"/>
+                                                <div class="rounded-full h-[90%] w-[90%]" :class="darkTheme ? 'bg-[#25273C]' : 'bg-white' " v-else></div>
+                                            </div>
+                                            <div 
+                                                class="grow bg-transparent font-light truncate text-lg" 
+                                                :class="{
+                                                    'text-slate-100': darkTheme, 
+                                                    'text-slate-400': !darkTheme,
+                                                    'line-through text-slate-500':  filterLists[index].isComplete,
+                                                    'no-underline text-slate-100':  !filterLists[index].isComplete,
+                                                    'cursor-pointer': list.isActive,
+                                                }" 
+                                                @click="completeStatus(index)" 
+                                            > 
+                                                {{ list.value }} 
+                                            </div>
+                                            <button 
+                                                class="fa-regular fa-x invisible group-hover:visible" 
+                                                :class="darkTheme ? 'text-slate-500' : 'text-slate-100'"
+                                                @click="deleteList(index)"
+                                            ></button>
+                                        </div>
+                                        <hr :class="darkTheme ? 'border-slate-600' : 'border-slate-300' " v-if="index < filterLists.length - 1">
+                                    </div>
+                                </div>
+                                <hr :class="darkTheme ? 'border-slate-600' : 'border-slate-300' ">
+                                <div class="flex flex-row justify-between text-xs p-4" :class="darkTheme ? 'text-slate-500' : 'text-slate-400'">
+                                    <p>{{filterLists.length}} items left</p>
+                                    <div class="flex flex-row gap-4">
+                                        <button :class="isAll ? (darkTheme ?  'text-blue-700' : 'text-blue-500') : null " @click="filterAll">All</button>
+                                        <button :class="isActive ? (darkTheme ?  'text-blue-700' : 'text-blue-500') : null " @click="filterActive">Active</button>
+                                        <button :class="isCompleted ? (darkTheme ?  'text-blue-700' : 'text-blue-500') : null " @click="filterComplete">Completed</button>
+                                    </div>
+                                    <button :class="darkTheme ?  'hover:text-blue-700' : 'hover:text-blue-500' " @click="clearComplete">Clear Completed</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-[#25273C] rounded-md w-full flex flex-col shadow-md" :class="darkTheme ? 'bg-[#25273C]' : 'bg-white' "  v-else>
+                            <div class="p-4 text-center" :class="darkTheme ? 'text-slate-500' : 'text-slate-400'">No to do list</div>
+                            <hr :class="darkTheme ? 'border-slate-600' : 'border-slate-300' ">
+                            <div class="flex flex-row justify-between text-xs p-4" :class="darkTheme ? 'text-slate-500' : 'text-slate-400'">
+                                <p>{{filterLists.length}} items left</p>
+                                <div class="flex flex-row gap-4">
+                                    <button :class="isAll ? (darkTheme ?  'text-blue-700' : 'text-blue-500') : null " @click="filterAll">All</button>
+                                    <button :class="isActive ? (darkTheme ?  'text-blue-700' : 'text-blue-500') : null " @click="filterActive">Active</button>
+                                    <button :class="isCompleted ? (darkTheme ?  'text-blue-700' : 'text-blue-500') : null " @click="filterComplete">Completed</button>
+                                </div>
+                                <button :class="darkTheme ?  'hover:text-blue-700' : 'hover:text-blue-500' " @click="clearComplete">Clear Completed</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        Vue.createApp({
+            data() {
+                return {
+                    darkTheme: true,
+                    newList: '',
+                    lists: [],
+                    isAll: true,
+                    isActive: false,
+                    isCompleted: false,
+                    filterLists: []
+                };
+            },
+
+            methods: {
+                changeTheme() {
+                    this.darkTheme = !this.darkTheme;
+                },
+
+                submitList() {
+                    objList = {
+                        isActive: false,
+                        isComplete: false,
+                        value: this.newList
+                    }
+
+                    if (this.newList) {
+                        this.lists.push(objList);
+                        this.filterLists.push(objList);
+                    }
+                    this.newList = '';
+                    this.filterAll();
+                },
+
+                activeStatus(index) {
+                    this.lists[index].isActive = !this.lists[index].isActive
+                },
+
+                completeStatus(index) {
+                    if(!this.lists[index].isActive) return;
+                    this.lists[index].isComplete = !this.lists[index].isComplete
+                },
+
+                filterAll() {
+                    this.filterLists = [];
+                    this.isAll = true;
+                    this.isCompleted = false;
+                    this.isActive = false;
+                    this.lists.forEach(list => {
+                        this.filterLists.push(list);
+                    });
+
+                },
+
+                filterActive() {
+                    this.filterLists = [];
+                    this.isActive = true;
+                    this.isCompleted = false;
+                    this.isAll = false;
+
+                    this.lists.forEach(list => {
+                        if (list.isActive && !list.isComplete) {
+                            this.filterLists.push(list);
+                        }
+                    });
+                },
+
+                filterComplete() {
+                    this.filterLists = [];
+                    this.isCompleted = true;
+                    this.isActive = false;
+                    this.isAll = false;
+
+                    this.lists.forEach(list => {
+                        if (list.isComplete) {
+                            this.filterLists.push(list);
+                        }
+                    });
+                },
+
+                clearComplete() {
+                    this.filterLists = [];
+                    this.lists = [];
+                    this.isAll = true;
+                    this.isCompleted = false;
+                    this.isActive = false;
+
+                    newArr = this.lists.filter(obj => obj.isComplete !== true);
+
+                    newArr.forEach(list => {
+                        this.lists.push(list);
+                        this.filterLists.push(list);
+                    });
+                    
+                },
+
+                deleteList(index) {
+                    this.filterLists = [];
+
+                    if (index > -1 && index < this.lists.length) {
+                        this.lists.splice(index, 1);
+                    }
+
+                    this.lists.forEach(list => {
+                        this.filterLists.push(list);
+                    });
+                }
+
+            },
+
+
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
