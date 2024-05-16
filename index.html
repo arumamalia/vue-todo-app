@@ -191,13 +191,13 @@
                 },
 
                 clearComplete() {
-                    this.filterLists = [];
-                    this.lists = [];
                     this.isAll = true;
                     this.isCompleted = false;
                     this.isActive = false;
-
+                    
                     newArr = this.lists.filter(obj => obj.isComplete !== true);
+                    this.filterLists = [];
+                    this.lists = [];
 
                     newArr.forEach(list => {
                         this.lists.push(list);
@@ -219,7 +219,6 @@
                 }
 
             },
-
 
         }).mount('#app');
     </script>
